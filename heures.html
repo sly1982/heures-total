@@ -1,0 +1,211 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=devicewidth, initial-scale=1.0" />
+  <title>TotalEnergies – Matrix Code</title>
+  <style>
+    html, body {
+      margin: 0;
+      padding: 0;
+      height: 100%;
+      width: 100%;
+      overflow: hidden;
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      background: #000;
+      color: #fff;
+    }
+
+    canvas#matrix {
+      position: fixed;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      display: block;
+      z-index: 0;
+    }
+
+    .overlay {
+      position: relative;
+      z-index: 1;
+      height: 100%;
+      width: 100%;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: flex-start;
+      padding-top: 40px;
+      text-align: center;
+    }
+
+    .title-main {
+      font-weight: 700;
+      color: #ff3333;
+      font-size: 1.4rem;
+      margin-bottom: 8px;
+    }
+
+    .title-sub {
+      font-weight: 600;
+      font-size: 1rem;
+      margin-bottom: 24px;
+    }
+
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 8px;
+      width: 100%;
+      max-width: 320px;
+    }
+
+    .cell {
+      background: rgba(0,0,0,0.7);
+      border: 2px solid #ffff00;
+      border-radius: 8px;
+      height: 64px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.4rem;
+      font-weight: 700;
+      color: #ffff66;
+      box-shadow: 0 0 10px rgba(255,255,0,0.5);
+      cursor: pointer;
+      user-select: none;
+    }
+
+    .cell.selected {
+      background: rgba(255,255,0,0.2);
+      box-shadow: 0 0 16px rgba(255,255,0,0.9);
+    }
+
+    .status { min-height: 22px; font-size: 0.95rem; }
+    .status-ok { color: #00ff66; font-weight: 700; }
+    .status-error { color: #ff4444; font-weight: 700; }
+
+    button {
+      border: none;
+      padding: 10px 18px;
+      border-radius: 50px;
+      background: #ffff00;
+      color: #000;
+      cursor: pointer;
+      margin-top: 10px;
+      font-weight: 600;
+    }
+
+    button.secondary {
+      background: #222;
+      border: 1px solid #ffff00;
+      color: #ffff00;
+    }
+  </style>
+</head>
+<body>
+<canvas id="matrix"></canvas>
+
+<div class="overlay">
+  <div class="title-main"><strong>TOTAL ENERGIES</strong></div>
+  <div class="title-sub">TEAM BUILDING DRM</div>
+
+  <div class="grid">
+    <div class="cell" data-digit="5">5</div>
+    <div class="cell" data-digit="0">0</div>
+    <div class="cell" data-digit="6">6</div>
+
+    <div class="cell" data-digit="7">7</div>
+    <div class="cell" data-digit="2">2</div>
+    <div class="cell" data-digit="8">8</div>
+
+    <div class="cell" data-digit="4">4</div>
+    <div class="cell" data-digit="1">1</div>
+    <div class="cell" data-digit="3">3</div>
+  </div>
+
+  <div id="currentCode" style="margin-top:10px; letter-spacing:0.3rem;">_ _ _</div>
+  <div id="statusMessage" class="status"></div>
+
+  <button id="checkBtn">Valider le code</button>
+  <button id="resetBtn" class="secondary">Réinitialiser</button>
+</div>
+
+<script>
+  const canvas = document.getElementById("matrix");
+  const ctx = canvas.getContext("2d");
+
+  function resize() {
+    canvas.width = window.innerWidth;
+    canvas.height = window.innerHeight;
+  }
+  resize();
+  window.onresize = resize;
+
+  const chars ="0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+  const fontSize = 16;
+  const columns = Math.floor(canvas.width / fontSize);
+  const drops = Array.from({length: columns}).map(()=>1);
+
+  function draw(){
+    ctx.fillStyle="rgba(0,0,0,0.15)";
+    ctx.fillRect(0,0,canvas.width,canvas.height);
+    ctx.fillStyle="#ffff66";
+    ctx.font=fontSize+"px monospace";
+
+    drops.forEach((y,i)=>{
+      const text = chars[Math.floor(Math.random()*chars.length)];
+      ctx.fillText(text,i*fontSize,y*fontSize);
+      if(y*fontSize>canvas.height && Math.random()>0.975) drops[i]=0;
+      drops[i]++;
+    });
+    requestAnimationFrame(draw);
+  }
+  draw();
+
+  const cells = document.querySelectorAll(".cell");
+  const codeEl = document.getElementById("currentCode");
+  const statusEl = document.getElementById("statusMessage");
+  const checkBtn = document.getElementById("checkBtn");
+  const resetBtn = document.getElementById("resetBtn");
+
+  let code="";
+
+  function updateDisplay(){
+    const a = code[0] || "_";
+    const b = code[1] || "_";
+    const c = code[2] || "_";
+    codeEl.textContent = `${a} ${b} ${c}`;
+  }
+
+  cells.forEach(cell=>{
+    cell.onclick=()=>{
+      if(code.length>=3) return;
+      const val = cell.dataset.digit;
+      code+=val;
+      cell.classList.add("selected");
+      updateDisplay();
+    };
+  });
+
+  checkBtn.onclick=()=>{
+    if(code==="506"){
+      statusEl.textContent="CODE BON";
+      statusEl.className="status status-ok";
+    } else {
+      statusEl.textContent="ERREUR";
+      statusEl.className="status status-error";
+    }
+  };
+
+  resetBtn.onclick=()=>{
+    code="";
+    updateDisplay();
+    statusEl.textContent="";
+    statusEl.className="status";
+    cells.forEach(c=>c.classList.remove("selected"));
+  };
+
+  updateDisplay();
+</script>
+</body>
+</html>
